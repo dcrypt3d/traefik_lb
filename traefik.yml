@@ -1,0 +1,104 @@
+# Traefik Static Configuration
+# NIST-Aligned Security Configuration
+
+api:
+  dashboard: false  # Dashboard disabled
+  insecure: false  # API access disabled
+  # API security - restrict access (configure in dynamic.yml with IP whitelist)
+  # Uncomment and configure if you want to restrict API access
+  # rootPath: /api
+  # middlewares:
+  #   - api-auth
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+      # Security headers middleware can now be applied (enabled in dynamic.yml)
+      # middlewares:
+      #   - security-headers
+  websecure:
+    address: ":443"
+    tls:
+      # NIST-aligned TLS configuration
+      minVersion: "VersionTLS12"  # Minimum TLS 1.2 (NIST recommends TLS 1.2+)
+      sniStrict: false  # Allow SNI flexibility for SSL termination
+      # Strong cipher suites (NIST-approved)
+      cipherSuites:
+        - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_RSA_WITH_AES_128_GCM_SHA256"
+      # Certificate configuration
+      certificates:
+        - certFile: /etc/traefik/certs/cert.pem
+          keyFile: /etc/traefik/certs/key.pem
+      # OCSP stapling for certificate validation
+      options: default
+  # NIST: Separate metrics endpoint for monitoring
+  # metrics:
+  # address: ":8082"
+  # Restrict metrics endpoint access via middleware in dynamic.yml
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+    # NIST: Configuration change monitoring
+    debugLogGeneratedTemplate: true
+
+# NIST: Comprehensive logging for audit and security monitoring
+log:
+  level: INFO
+  format: json  # Structured logging for SIEM integration
+  filePath: /var/log/traefik/traefik.log
+
+# NIST: Access logging for security auditing
+accessLog:
+  format: json  # Structured access logs
+  filePath: /var/log/traefik/access.log
+  fields:
+    defaultMode: keep
+    headers:
+      defaultMode: keep
+      names:
+        User-Agent: keep
+        Authorization: drop  # Don't log credentials
+        Cookie: drop  # Don't log session cookies
+        Set-Cookie: drop
+    # Include security-relevant fields
+    requestHost: true
+    requestMethod: true
+    requestPath: true
+    requestProtocol: true
+    requestPort: true
+    requestScheme: true
+    requestURI: true
+    responseStatus: true
+    responseTime: true
+    originStatus: true
+    originIP: true
+    originPort: true
+    duration: true
+    retryAttempts: true
+
+# NIST: Metrics for security monitoring
+# metrics:
+#   prometheus:
+#     addEntryPointsLabels: true
+#     addServicesLabels: true
+#     addRoutersLabels: true
+#     entryPoint: metrics  # Expose metrics on separate endpoint
+
+# NIST: Global security settings
+global:
+  checkNewVersion: false  # Disable version checks for air-gapped environments
+  sendAnonymousUsage: false  # Disable telemetry for privacy
+

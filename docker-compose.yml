@@ -1,0 +1,71 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    network_mode: host
+    # NIST: Security constraints
+    security_opt:
+      - no-new-privileges:true  # Prevent privilege escalation
+    # NIST: Read-only root filesystem (if possible)
+    read_only: true  # Set to true if your app doesn't need write access
+    # NIST: Resource limits to prevent resource exhaustion
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # NIST: User/group for non-root execution
+    # user: "65534:65534"  # Uncomment and adjust if running as non-root
+    volumes:
+      # Mount the static configuration file
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      # Mount the dynamic configuration file
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+      # Mount the certificates directory
+      # Make sure to place your cert.pem and key.pem files in ./certs/ directory
+      - ./certs:/etc/traefik/certs:ro
+      # NIST: Audit log directory for security monitoring
+      - ./logs:/var/log/traefik
+      # Mount Docker socket if you want to use Docker provider (optional)
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      # Dashboard and API disabled
+      - --api.dashboard=false
+      - --api.insecure=false
+    labels:
+      - "traefik.enable=true"
+      # Uncomment and configure below if you want to access the dashboard via Traefik itself
+      # - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      # - "traefik.http.routers.dashboard.entrypoints=websecure"
+      # - "traefik.http.routers.dashboard.tls=true"
+      # - "traefik.http.routers.dashboard.service=api@internal"
+      # - "traefik.http.middlewares.dashboard-auth.basicauth.users=admin:$$apr1$$..."
+      # - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+    # NIST: Syslog logging for centralized log management
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "tcp://localhost:514"  # Change to your syslog server address
+        # Alternative: "udp://localhost:514" for UDP
+        # Alternative: "unix:///dev/log" for local syslog socket
+        syslog-facility: "daemon"  # Facility: daemon, local0-local7, user, etc.
+        syslog-format: "rfc5424"  # Format: rfc3164 or rfc5424
+        tag: "traefik"  # Tag to identify logs from this container
+        # syslog-tls-ca-cert: "/path/to/ca-cert.pem"  # For TLS syslog (optional)
+        # syslog-tls-cert: "/path/to/cert.pem"  # For TLS syslog (optional)
+        # syslog-tls-key: "/path/to/key.pem"  # For TLS syslog (optional)
+        # syslog-tls-skip-verify: "false"  # Skip TLS verification (optional)
+    # NIST: Health check (adjust port if API is on different port)
+    # Note: With host network mode, healthcheck may need adjustment
+    # Uncomment and configure if healthcheck is needed
+    # healthcheck:
+    #   test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/ping"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
+

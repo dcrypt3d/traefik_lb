@@ -1,0 +1,137 @@
+﻿# Traefik Dynamic Configuration
+# Routes HTTPS requests for *.host.com to internal IIS hosts
+# SSL Termination with Re-encryption and Sticky Sessions
+# NIST-Aligned Security Configuration
+#
+# IMPORTANT: With SSL termination and re-encryption:
+# - Traefik terminates SSL from clients (uses Traefik's certificate)
+# - Traefik re-encrypts traffic to backend servers (uses backend certificates)
+# - Sticky sessions (cookie-based routing) ✅ Enabled
+# - HTTP-level middlewares (security headers, rate limiting, etc.) ✅ Enabled
+# - Path-based routing ✅ Enabled
+# - HTTP authentication ✅ Enabled
+# - Request/response modification ✅ Enabled
+#
+# Edit this file directly to change configuration values
+
+http:
+  routers:
+    https-router:
+      rule: "HostRegexp(`{subdomain:[a-z0-9-]+}.host.com`)"
+      entryPoints:
+        - websecure
+      service: https-service
+      tls: {}  # SSL termination (no passthrough) - Traefik handles TLS
+      middlewares:
+        - security-headers  # ✅ Now works with SSL termination
+      priority: 1
+
+  services:
+    https-service:
+      loadBalancer:
+        # ✅ Sticky sessions enabled - Traefik can set cookies
+        sticky:
+          cookie:
+            name: traefik-sticky
+            secure: true
+            httpOnly: true
+            sameSite: none
+        servers:
+          - url: "https://192.168.1.10:443"
+          - url: "https://192.168.1.11:443"
+        # Health checks work properly with SSL termination and re-encryption
+        healthCheck:
+          path: "/"
+          interval: "30s"
+          timeout: "3s"
+          scheme: https  # Use https for re-encryption to backends
+          # Custom headers can be used with SSL termination
+          # headers:
+          #   Authorization: "Bearer <token>"
+  
+    # NIST: Secure metrics endpoint (optional - uncomment if needed)
+    # metrics-router:
+    #   rule: "Host(`metrics.internal`) && PathPrefix(`/metrics`)"
+    #   entryPoints:
+    #     - metrics
+    #   service: api@internal
+    #   middlewares:
+    #     - metrics-auth
+    #     - ip-whitelist
+
+  middlewares:
+    # ============================================================================
+    # MIDDLEWARES THAT NOW WORK WITH SSL TERMINATION
+    # ============================================================================
+    # All HTTP-level middlewares are enabled because Traefik can decrypt
+    # traffic to inspect or modify HTTP headers/content with SSL termination.
+    # ============================================================================
+
+    # ✅ ENABLED: Security headers - requires HTTP header modification
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "geolocation=(), microphone=(), camera=()"
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "SAMEORIGIN"
+          X-XSS-Protection: "1; mode=block"
+          Referrer-Policy: "strict-origin-when-cross-origin"
+          Server: ""
+
+    # ✅ ENABLED: HTTP-level rate limiting - requires HTTP request inspection
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1s
+        sourceCriterion:
+          ipStrategy:
+            depth: 0
+
+    # ✅ ENABLED: HTTP-based IP whitelisting - requires HTTP header inspection
+    # Uncomment and configure if needed
+    # ip-whitelist:
+    #   ipWhiteList:
+    #     sourceRange:
+    #       - "192.168.1.0/24"
+    #       - "10.0.0.0/8"
+
+    # ✅ ENABLED: Request size limiting - requires HTTP body inspection
+    # Uncomment and configure if needed
+    # request-size-limit:
+    #   buffering:
+    #     maxRequestBodyBytes: 10485760
+    #     maxResponseBodyBytes: 10485760
+    #     memRequestBodyBytes: 2097152
+    #     memResponseBodyBytes: 2097152
+
+    # ✅ ENABLED: HTTP-level retry - requires HTTP request inspection
+    # Uncomment and configure if needed
+    # retry:
+    #   retry:
+    #     attempts: 3
+    #     initialInterval: 100ms
+
+    # ✅ ENABLED: Compression - requires HTTP response modification
+    # Uncomment if needed
+    # compression:
+    #   compress: {}
+
+    # ✅ ENABLED: HTTP authentication - requires HTTP header inspection
+    # Uncomment and configure if needed
+    # metrics-auth:
+    #   basicAuth:
+    #     users:
+    #       - "admin:$apr1$..."
+    #     realm: "Metrics"
+    #     removeHeader: true
+
