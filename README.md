@@ -71,6 +71,30 @@ Place your certificate and private key files in the certs directory:
 - Certificate file: `./certs/cert.pem`
 - Private key file: `./certs/key.pem`
 
+**File Permissions (Important for Security):**
+
+Set appropriate file permissions to protect your certificates:
+
+```bash
+# Certificate file - readable by owner and group
+chmod 644 ./certs/cert.pem
+
+# Private key file - readable only by owner (CRITICAL for security)
+chmod 600 ./certs/key.pem
+```
+
+**On Windows:** Use PowerShell to set permissions:
+```powershell
+# Certificate file
+icacls .\certs\cert.pem /grant:r "$env:USERNAME:(R)"
+icacls .\certs\cert.pem /remove "Users" 2>$null
+
+# Private key file - restrict to owner only
+icacls .\certs\key.pem /grant:r "$env:USERNAME:(R)"
+icacls .\certs\key.pem /remove "Users" 2>$null
+icacls .\certs\key.pem /remove "Authenticated Users" 2>$null
+```
+
 **Note:** Your certificate should cover `*.yourdomain.com` (wildcard certificate) or include all the specific subdomains you plan to use. This certificate is used for SSL termination (client → Traefik).
 
 **Backend Certificates:** Your backend servers should have their own valid HTTPS certificates. Traefik will validate these certificates when re-encrypting traffic to backends.

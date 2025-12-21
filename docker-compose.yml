@@ -30,6 +30,8 @@ services:
       - ./certs:/etc/traefik/certs:ro
       # NIST: Audit log directory for security monitoring
       - ./logs:/var/log/traefik
+      # Mount rsyslog socket for Unix socket logging (alternative to UDP/TCP)
+      - /dev/log:/dev/log
       # Mount Docker socket if you want to use Docker provider (optional)
       # - /var/run/docker.sock:/var/run/docker.sock:ro
     command:
@@ -46,19 +48,16 @@ services:
       # - "traefik.http.middlewares.dashboard-auth.basicauth.users=admin:$$apr1$$..."
       # - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
     # NIST: Syslog logging for centralized log management
+    # Configured to use host's rsyslog service
     logging:
       driver: syslog
       options:
-        syslog-address: "tcp://localhost:514"  # Change to your syslog server address
-        # Alternative: "udp://localhost:514" for UDP
-        # Alternative: "unix:///dev/log" for local syslog socket
+        # Use Unix socket for rsyslog (requires /dev/log volume mount above)
+        syslog-address: "unix:///dev/log"
         syslog-facility: "daemon"  # Facility: daemon, local0-local7, user, etc.
         syslog-format: "rfc5424"  # Format: rfc3164 or rfc5424
         tag: "traefik"  # Tag to identify logs from this container
-        # syslog-tls-ca-cert: "/path/to/ca-cert.pem"  # For TLS syslog (optional)
-        # syslog-tls-cert: "/path/to/cert.pem"  # For TLS syslog (optional)
-        # syslog-tls-key: "/path/to/key.pem"  # For TLS syslog (optional)
-        # syslog-tls-skip-verify: "false"  # Skip TLS verification (optional)
+
     # NIST: Health check (adjust port if API is on different port)
     # Note: With host network mode, healthcheck may need adjustment
     # Uncomment and configure if healthcheck is needed
