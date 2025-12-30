@@ -31,7 +31,7 @@ services:
       # NIST: Audit log directory for security monitoring
       - ./logs:/var/log/traefik
       # Mount rsyslog socket for Unix socket logging (alternative to UDP/TCP)
-      - /dev/log:/dev/log
+      - /dev/log:/dev/log:z
       # Mount Docker socket if you want to use Docker provider (optional)
       # - /var/run/docker.sock:/var/run/docker.sock:ro
     command:
@@ -53,7 +53,7 @@ services:
       driver: syslog
       options:
         # Use Unix socket for rsyslog (requires /dev/log volume mount above)
-        syslog-address: "unix:///dev/log"
+        syslog-address: "unixgram:///dev/log"
         syslog-facility: "daemon"  # Facility: daemon, local0-local7, user, etc.
         syslog-format: "rfc5424"  # Format: rfc3164 or rfc5424
         tag: "traefik"  # Tag to identify logs from this container

@@ -14,6 +14,29 @@
 #
 # Edit this file directly to change configuration values
 
+# TLS Configuration
+tls:
+  # TLS Options - NIST-aligned security settings
+  options:
+    default:
+      minVersion: "VersionTLS12"  # Minimum TLS 1.2 (NIST recommends TLS 1.2+)
+      sniStrict: false  # Allow SNI flexibility for SSL termination
+      # Strong cipher suites (NIST-approved)
+      cipherSuites:
+        - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_RSA_WITH_AES_128_GCM_SHA256"
+  
+  # TLS Certificates - File-based certificates
+  certificates:
+    - certFile: /etc/traefik/certs/cert.pem
+      keyFile: /etc/traefik/certs/key.pem
+      stores:
+        - default
+
 http:
   routers:
     https-router:
