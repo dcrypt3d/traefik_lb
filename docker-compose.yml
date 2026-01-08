@@ -22,9 +22,9 @@ services:
     # user: "65534:65534"  # Uncomment and adjust if running as non-root
     volumes:
       # Mount the static configuration file
-      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:z
       # Mount the dynamic configuration file
-      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:z
       # Mount the certificates directory
       # Make sure to place your cert.pem and key.pem files in ./certs/ directory
       - ./certs:/etc/traefik/certs:ro

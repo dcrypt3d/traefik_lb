@@ -47,6 +47,7 @@ http:
       tls: {}  # SSL termination (no passthrough) - Traefik handles TLS
       middlewares:
         - security-headers  # ✅ Now works with SSL termination
+        - error-handler  # ✅ 404 error handling
       priority: 1
 
   services:
@@ -158,3 +159,22 @@ http:
     #     realm: "Metrics"
     #     removeHeader: true
 
+    # ✅ ENABLED: Error handling - handles 404 and other HTTP errors
+    error-handler:
+      errors:
+        status:
+          - "404"
+        service: error-page-service
+        query: "/{status}"  # Optional: pass status code to error page
+        # Alternative: Use static response instead of service
+        # status: "404"
+        # service: error-page-service
+        # query: "/404"
+
+    # Error page service - returns custom 404 page
+    # Option 1: Use a static file service (requires static file server)
+    # Option 2: Use one of your backend servers with a /error endpoint
+    # Option 3: Use Traefik's built-in error responses (default behavior)
+    # For now, we'll use a simple approach that returns a 404 from backend
+    # If backend returns 404, it will be passed through
+    # To customize, create an error page service pointing to a static file server
