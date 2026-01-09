@@ -72,6 +72,19 @@ http:
           # Custom headers can be used with SSL termination
           # headers:
           #   Authorization: "Bearer <token>"
+
+    # Error page service for 404 handling
+    # Uses a different IIS server IP for error pages
+    # Update the IP address below to match your error page server
+    error-service:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.12:443"  # Different IIS server for error pages
+        healthCheck:
+          path: "/"
+          interval: "30s"
+          timeout: "3s"
+          scheme: https
   
     # NIST: Secure metrics endpoint (optional - uncomment if needed)
     # metrics-router:
@@ -164,7 +177,7 @@ http:
       errors:
         status:
           - "404"
-        service: error-page-service
+        service: "error-service"
         query: "/{status}"  # Optional: pass status code to error page
         # Alternative: Use static response instead of service
         # status: "404"
